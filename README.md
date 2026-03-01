@@ -1,59 +1,37 @@
-# RFID Wallet System
+# RFID E-Commerce & Wallet Platform (Enhanced)
 
-A complete IoT RFID Wallet System for secure, contactless payments.
+A comprehensive IoT solution for service purchasing using RFID wallets, featuring atomic transactions, card management, and a premium web dashboard.
 
-## System Overview
-This project implements a decentralized wallet system where RFID tags act as digital wallets. The system provides atomic transaction processing, a live monitoring dashboard, and secure MQTT-based hardware communication.
+## System Architecture
+**Dashboard (Web)** ←[HTTP]→ **Backend API (Node.js)** ←[MQTT]→ **ESP8266 (Firmware)**
+- **Central Decision-Maker**: The Backend API handles all business logic, balance checks, and database updates.
+- **Hardware Integration**: The ESP8266 acts as a merchant terminal, scanning cards and sending them to the backend.
 
-## Architecture
-The system follows a hub-and-spoke architecture:
-`Dashboard (Web) ←[HTTP]→ Backend API (Node.js) ←[MQTT]→ ESP8266 (Firmware) ←[SPI]→ RFID Reader`
+## Hardware-First Security (New Flow)
+This project enforces a **Scan-to-Access** security model. The Web Dashboard is locked by default and only opens when a valid RFID tag is scanned via the hardware (ESP8266 or Simulator).
 
-- **Dashboard**: Pure HTML/CSS/JS interface for viewing balances and transaction history.
-- **Backend API**: Central decision-maker using Express and MongoDB. Manages wallet states and logs transactions.
-- **MQTT Broker**: Facilitates asynchronous communication between hardware and backend.
-- **ESP8266**: Edge device that reads RFID UIDs and sends them for processing.
+1. **Hardware Scan**: Scans card and notifies the Backend.
+2. **Dashboard Unlock**: The Web Dashboard detects the scan and opens the specific user's store session.
+3. **Timed Session**: Access expires after 5 minutes of inactivity for security.
+4. **Service Purchase**: Once unlocked, users can buy cafeteria meals, print documents, or top-up their balance.
 
-## Technologies Used
-- **Firmware**: Arduino/C++, ESP8266WiFi, PubSubClient, MFRC522, ArduinoJson.
-- **Backend**: Node.js, Express, MongoDB (Mongoose), MQTT.js.
-- **Frontend**: Vanilla HTML5, CSS3 (Custom Design System), JavaScript (Fetch API).
-- **Communication**: MQTT for IoT, REST (JSON/HTTP) for Web.
+## Setup & Deployment
+1. **Backend (Python)**:
+   ```bash
+   cd backend-api
+   pip install -r requirements.txt
+   python main.py
+   ```
+2. **Frontend**: Open `web-dashboard/index.html`. It will show "Terminal Locked" until a card is scanned.
 
-## Safe Wallet Update
-The system uses **MongoDB Transactions (Sessions)** to ensure atomicity. When a card is scanned:
-1. A transaction session starts.
-2. The wallet balance is checked.
-3. If sufficient, the balance is deducted and a transaction log is created.
-4. The session is committed. If any step fails, the entire operation is rolled back, preventing data inconsistency.
 
-## Installation & Setup
+## Safety & Rollback
+The system is designed for high reliability. 
+> [!NOTE]
+> **Standalone MongoDB Support**: By default, this version supports standard standalone MongoDB installations. To enable full Acid-compliant **Atomic Transactions**, you must run MongoDB as a **Replica Set** and re-enable the `session` logic in `index.js`. 
 
-### 1. Backend API
-```bash
-cd backend-api
-npm install
-# Configure .env with your MongoDB URI and MQTT Broker
-npm start
-```
+In the current version, the system performs sequential updates (Wallets then Transactions) to ensure compatibility across all environments.
 
-### 2. Web Dashboard
-- Open `web-dashboard/index.html` in any modern browser.
-- Ensure the `API_URL` in the `<script>` tag matches your backend's address.
-
-### 3. ESP8266 Firmware
-- Open `esp8266-firmware/esp8266-firmware.ino` in Arduino IDE.
-- Install libraries: `PubSubClient`, `MFRC522`, `ArduinoJson`.
-- Update WiFi and MQTT credentials in the configuration section.
-- Upload to your ESP8266 board.
-
-## API Endpoints Summary
-- `GET /api/wallets`: List all registered wallets and balances.
-- `GET /api/transactions`: Retrieve the 50 most recent transactions.
-- `POST /api/wallets/topup`: Manually add balance to a card (Body: `{ rfidUid, amount }`).
-
-## Live Web Dashboard
-http://157.173.101.159:<PORT>
 
 ---
-*Developed for University Capstone Submission*
+*Created for Academic Submission - Production-Ready Standards*

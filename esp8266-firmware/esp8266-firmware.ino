@@ -11,8 +11,8 @@
  */
 
 // --- CONFIGURATION ---
-const char* ssid = "YOUR_WIFI_SSID";
-const char* password = "YOUR_WIFI_PASSWORD";
+const char* ssid = "I";
+const char* password = "stupidMn";
 const char* mqtt_server = "157.173.101.159"; // Replace with your MQTT Broker address
 const int mqtt_port = 1883;
 
@@ -20,14 +20,16 @@ const int mqtt_port = 1883;
 const char* topic_publish = "rfid/wallet/scan";
 const char* topic_subscribe = "rfid/wallet/response";
 
-// Hardware Pins (Adjust for your board - D1 Mini/NodeMCU)
-#define SS_PIN  D2
-#define RST_PIN D1
+// Hardware Pins
+#define SS_PIN    D2
+#define RST_PIN   D1
+#define MODE_PIN  D3  // LOW = Purchase, HIGH = Top-up
 
 // --- OBJECTS ---
 WiFiClient espClient;
 PubSubClient client(espClient);
 MFRC522 mfrc522(SS_PIN, RST_PIN);
+
 
 void setup_wifi() {
   delay(10);
@@ -88,6 +90,8 @@ void setup() {
   SPI.begin();
   mfrc522.PCD_Init();
   
+  pinMode(MODE_PIN, INPUT_PULLUP);
+  
   setup_wifi();
   client.setServer(mqtt_server, mqtt_port);
   client.setCallback(callback);
@@ -122,14 +126,21 @@ void loop() {
   Serial.print("RFID UID: ");
   Serial.println(uid);
 
+  // Determine mode
+  String mode = (digitalRead(MODE_PIN) == HIGH) ? "topup" : "purchase";
+  Serial.print("Operating Mode: ");
+  Serial.println(mode);
+
   // Prepare JSON payload
-  StaticJsonDocument<200> doc;
+  StaticJsonDocument<255> doc;
   doc["device_id"] = WiFi.macAddress();
   doc["rfid_uid"] = uid;
+  doc["mode"] = mode;
   doc["timestamp"] = millis();
 
   char buffer[256];
   serializeJson(doc, buffer);
+
 
   // Publish
   if (client.publish(topic_publish, buffer)) {
